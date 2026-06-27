@@ -124,23 +124,24 @@ class PreviewModal extends BaseModal {
    */
   getImageInfo(item) {
     // Извлекаем имя файла из пути
-    const fileName = item.name || item.path.split('/').pop();
+    const fileName = item.name || item.path.split('/').pop()  || 'Неизвестный файл';
 
+    // Fallback для даты
+    const dateToFormat = item.created || item.modified || item.date || new Date().toISOString(); 
     // Получаем отформатированную дату
-    const formattedDate = this.formatDate(item.created);
+    const formattedDate = this.formatDate(dateToFormat);
 
     // Получаем размер файла в Кб
-    const fileSize = (item.size / 1024).toFixed(2);
+    const fileSize = item.size ? (item.size / 1024).toFixed(2) : '0';
 
     // Путь к изображению (миниатюра или сам файл)
     const imageUrl = item.preview || item.file || '#';
-
-    const filePath = item.path;
+    const filePath = item.path || '';
     const fileUrl = item.file || '';
 
-    return `<div class="image-preview-container">
-              <img src="${imageUrl}" alt="${fileName}" />
-              <table class="ui celled table">
+    return `<div class='image-preview-container'>
+              <img src="${imageUrl}" alt='${fileName}' />
+              <table class='ui celled table'>
                 <thead>
                   <tr>
                     <th>Имя</th>
@@ -156,7 +157,7 @@ class PreviewModal extends BaseModal {
                   </tr>
                 </tbody>
               </table>
-              <div class="buttons-wrapper">
+              <div class='buttons-wrapper'>
                 <button class="ui labeled icon red basic button delete" data-path='${filePath}'>
                   Удалить
                   <i class="trash icon"></i>

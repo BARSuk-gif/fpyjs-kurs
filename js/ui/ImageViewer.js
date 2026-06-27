@@ -8,16 +8,27 @@ class ImageViewer {
     this.element = element;
 
     // 1.2. Сохраняем блок предпросмотра изображения
-    this.previewContainer = this.element.closest('.images-wrapper').querySelector('.column.six.wide img');
+    this.previewContainer = this.element.querySelector('.column.six.wide img');
 
     // 1.3. Сохраняем блок, в котором будут отрисовываться все изображения
-    this.imagesGrid = this.element.querySelector('.ui.grid .row:first-child');
-    if (!this.imagesGrid) {
-      // Если нет первой строки, создаем
-      const firstRow = document.createElement('div');
-      firstRow.className = 'row';
-      this.element.querySelector('.ui.grid').insertBefore(firstRow, this.element.querySelector('.ui.grid .row:last-child'));
-      this.imagesGrid = firstRow;
+    const rows = this.element.querySelectorAll('.ui.grid .row');
+    this.imagesGrid = rows.length > 1 ? rows[1] : null;
+
+    if (!this.imagesGrid) {      
+      const grid = this.element.querySelector('.ui.grid');
+      if (grid) {
+        // Создаем новую строку для изображений
+        const newRow = document.createElement('div');
+        newRow.className = 'row';
+        // Вставляем после первой строки (с кнопками)
+        const firstRow = grid.querySelector('.row:first-child');
+        if (firstRow) {
+          grid.insertBefore(newRow, firstRow.nextSibling);
+        } else {
+          grid.appendChild(newRow);
+        }
+        this.imagesGrid = newRow;
+      }
     }
 
     this.registerEvents()
@@ -39,7 +50,9 @@ class ImageViewer {
         const target = event.target;
         // Проверяем, был ли двойной клик на изображении
         if (target.tagName === 'IMG') {
-          this.previewContainer.src = target.src;
+          if (this.previewContainerreview) {
+            this.previewContainer.src = target.src;
+          }          
         }
       });
 
@@ -63,7 +76,7 @@ class ImageViewer {
     if (selectAllButton) {
       selectAllButton.addEventListener('click', () => {
         // Получаем все изображения
-        const imageWrappers = this.imagesGrid.querySelectorAll('.image-wrapper');
+        const imageWrappers = this.imagesGrid ? this.imagesGrid.querySelectorAll('.image-wrapper') : [];
 
         // Проверяем, есть ли хотя бы одно изображение с классом selected
         const hasSelected = Array.from(imageWrappers).some(wrapper => 
@@ -90,7 +103,12 @@ class ImageViewer {
     if (showUploadedButton) {
       showUploadedButton.addEventListener('click', () => {
         // Получаем модальное окно просмотра загруженных изображений
-        const previewModal = App.getModal('preview');
+        const previewModal = App.getModal('filePreviewer');
+
+        if (!previewModal) {
+          console.error('Модальное окно preview не найдено');
+          return;
+        }
 
         // Отображаем большой лоадер
         const content = previewModal.domElement.querySelector('.scrolling.content');
@@ -105,7 +123,9 @@ class ImageViewer {
         Yandex.getUploadedFiles((error, response) => {
           if (error) {
             console.error('Ошибка получения файлов:', error);
-            content.innerHTML = '<div class="ui negative message">Ошибка загрузки файлов</div>';
+            if (content) {
+              content.innerHTML = '<div class="ui negative message">Ошибка загрузки файлов</div>';
+            }            
             return;
           }
 
@@ -113,7 +133,9 @@ class ImageViewer {
             // Отрисовываем все полученные изображения
             previewModal.showImages(response.items);
           } else {
-            content.innerHTML = '<div class="ui info message">Нет загруженных файлов</div>';
+            if (content) {
+              content.innerHTML = '<div class="ui info message">Нет загруженных файлов</div>';
+            }            
           }
         });
       });
@@ -124,17 +146,27 @@ class ImageViewer {
     if (sendButton) {
       sendButton.addEventListener('click', () => {
         // Получаем модальное окно загрузки изображений
-        const uploadModal = App.getModal('upload');
+        const uploadModal = App.getModal('fileUploader');
+
+        if (!uploadModal) {
+          console.error('Модальное окно upload не найдено');
+          return;
+        }
 
         // Получаем все выделенные изображения (с классом selected)
-        const selectedWrappers = this.imagesGrid.querySelectorAll('.image-wrapper.selected');
+        const selectedWrappers = this.imagesGrid ? this.imagesGrid.querySelectorAll('.image-wrapper.selected') : [];
         const selectedImages = Array.from(selectedWrappers).map(wrapper => {
           const img = wrapper.querySelector('img');
           return {
-            url: img.src,
-            id: img.dataset.id || Date.now() + Math.random()
+            url: img ? img.src : '',
+            id: img ? img.dataset.id || Date.now() + Math.random() : Date.now()
           };
         });
+
+        if (selectedImages.length === 0) {
+          alert('Выберите хотя бы одно изображение');
+          return;
+        }
 
         // Открываем модальное окно
         uploadModal.open();
@@ -176,6 +208,7 @@ class ImageViewer {
       if (selectAllButton) {
         selectAllButton.classList.remove('disabled');
       }
+
       // Для каждого изображения формируем разметку
       const imagesHTML = images.map(image => {
         return `<div class='four wide column ui medium image-wrapper'>
@@ -184,7 +217,9 @@ class ImageViewer {
       });
 
       // Добавляем сформированную разметку к уже существующей
-      this.imagesGrid.innerHTML = imagesHTML.join('');
+      if (this.imagesGrid) {
+        this.imagesGrid.innerHTML = imagesHTML.join('');
+      }      
 
       // Обновляем состояние кнопок
       this.checkButtonText();
@@ -201,7 +236,7 @@ class ImageViewer {
    */
   checkButtonText(){
     // Получаем все отрисованные изображения
-    const imageWrappers = this.imagesGrid.querySelectorAll('.image-wrapper');
+    const imageWrappers = this.imagesGrid ? this.imagesGrid.querySelectorAll('.image-wrapper') : [];
 
     // Получаем кнопки с классом select-all и send
     const selectAllButton = this.element.querySelector('.select-all');
@@ -218,6 +253,7 @@ class ImageViewer {
       }
       return;
     }
+    
     // Проверяем, все ли изображения имеют класс selected
     const allSelected = Array.from(imageWrappers).every(wrapper =>
       wrapper.classList.contains('selected')

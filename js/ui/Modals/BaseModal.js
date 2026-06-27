@@ -12,13 +12,13 @@ class BaseModal {
    * Открывает всплывающее окно
    */
   open() {
-    this.semanticElement.modal("show");
+    this.semanticElement.modal('show');
   }
 
   /**
    * Закрывает всплывающее окно
    */
   close() {
-    this.semanticElement.modal("hide");
+    this.semanticElement.modal('hide');
   }
 }

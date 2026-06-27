@@ -15,11 +15,11 @@ class Yandex {
 		if (yandexToken) {
 			return yandexToken;
 		} else {
-			let userInput = prompt("Введите ваш токен для Yandex API:");      
+			let userInput = prompt('Введите ваш токен для Yandex API:');      
 
 			// Проверяем, не нажал ли пользователь Отмена
 			while (userInput === null || userInput.trim() === '') {
-				userInput = prompt("Токен не может быть пустым! Введите ваш токен для Yandex API:");         
+				userInput = prompt('Токен не может быть пустым! Введите ваш токен для Yandex API:');         
 			}
 
 			const trimmedToken = userInput.trim();

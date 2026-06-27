@@ -45,23 +45,38 @@ class FileUploaderModal extends BaseModal {
     if (content) {
       content.addEventListener('click', (event) => {       
         const target = event.target;
+        
 
         // Если клик был на поле ввода (input)
+        /**
         if (target.classList && target.classList.contains('image-path')) {
           // Удаляем класс error у родительского блока с классом input
           const inputBlock = target.closest('.ui.action.input');
           if (inputBlock) {
             inputBlock.classList.remove('error');
-          }          
+          }
+          return; // завершаем обработку,          
+        } */
+
+        const inputField = target.closest('.image-path');
+        if (inputField) {
+          const inputBlock = inputField.closest('.ui.action.input');
+          if (inputBlock) {
+            inputBlock.classList.remove('error');
+          }
+          return;
         }
 
         // Если клик был на кнопке отправки отдельного изображения
-        if (target.classList && target.classList.contains('upload-button')) {
+        // Проверяем, является ли target или его родитель кнопкой
+        const button = target.closest('.upload-button');
+        if (button) {
           //  Находим контейнер изображения (ближайший родитель с классом image-preview-container)
-          const imageContainer = target.closest('.image-preview-container');
+          const imageContainer = button.closest('.image-preview-container');
           if (imageContainer) {
             this.sendImage(imageContainer);
           }
+          return;
         }
       });
     }    
@@ -148,6 +163,12 @@ class FileUploaderModal extends BaseModal {
       inputBlock.classList.add('disabled');
     }
 
+    // Сохраняем кнопку для восстановления состояния
+    const uploadButton = imageContainer.querySelector('.upload-button');
+    if (uploadButton) {
+      uploadButton.classList.add('loading', 'disabled');
+    }
+
     // Получаем путь добавляемого изображения из атрибута src элемента img
     const imgElement = imageContainer.querySelector('img');
     const imageUrl = imgElement ? imgElement.src : null;
@@ -157,13 +178,31 @@ class FileUploaderModal extends BaseModal {
       if (inputBlock) {
         inputBlock.classList.remove('disabled')
       }
+      if (uploadButton) {
+        uploadButton.classList.remove('loading', 'disabled');
+      }
       return;
     }
 
     // Выполняем запрос на отправку изображения
     Yandex.uploadFile(uploadPath, imageUrl, (error, response) => {
+      // Восстанавливаем кнопку
+      if (uploadButton) {
+        uploadButton.classList.remove('loading', 'disabled');
+      }
 
-      // Удаляем блок контейнер добавленного изображения
+      if (error) {
+        console.error('Ошибка загрузки:', error);
+        alert('Ошибка загрузки файла: ' + (error.message || 'Неизвестная ошибка'));
+
+        if (inputBlock) {
+          inputBlock.classList.remove('disabled');
+          inputBlock.classList.add('error');
+        }
+        return;
+      }
+
+      // Успешная загрузка - удаляем блок
       if (imageContainer && imageContainer.parentNode) {
         imageContainer.remove();
       }
@@ -175,11 +214,7 @@ class FileUploaderModal extends BaseModal {
       }
 
       // Обновляем коллекцию контейнеров
-      this.imageContainers = this.domElement.querySelectorAll('.image-preview-container');
-
-      if (error) {
-        console.error('Ошибка загрузки:', error);
-      }
+      this.imageContainers = this.domElement.querySelectorAll('.image-preview-container');  
     });
   }
 }
